@@ -691,17 +691,26 @@ func commPage(w http.ResponseWriter, r *http.Request) {
 
 func eventsPage(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
+		result := "All right"
 		req, err := http.NewRequest(http.MethodGet,
 			"https://sdracamle.herokuapp.com/sendmess", nil)
 		if err == nil {
 			client := &http.Client{Timeout:	2 * time.Second}
 			_, err := client.Do(req)
 			if err != nil {
+				result = err.Eroor()
 				log.Println(err.Error())
 			}
 		} else {
+			result = err.Error()
 			log.Println(err.Error())
 		}
+		mu := &sync.Mutex{}
+		mu.Lock()
+		data, _ := ioutil.ReadFile("logs.txt")
+		newdata := string(data) + "\n" + result
+		_ = ioutil.WriteFile("logs.txt", []byte(newdata), 0644)
+		mu.Unlock()
 	}	
 	writeGeneral(w, r)
 	w.Write([]byte(`<p><b>Internals Inspired Cup (2019)</b> [ ` +
