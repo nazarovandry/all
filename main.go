@@ -690,14 +690,19 @@ func commPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func eventsPage(w http.ResponseWriter, r *http.Request) {
-	/*if r.Method == http.MethodGet {
-		mu := &sync.Mutex{}
-		mu.Lock()
-		data, _ := ioutil.ReadFile("comm.txt")
-		newdata := string(data) + "\nTEST!"
-		_ = ioutil.WriteFile("comm.txt", []byte(newdata), 0644)
-		mu.Unlock()
-	}*/
+	if r.Method == http.MethodGet {
+		req, err := http.NewRequest(http.MethodGet,
+			"https://sdracamle.herokuapp.com/sendmess", nil)
+		if err == nil {
+			client := &http.Client{Timeout:	2 * time.Second}
+			_, err := client.Do(req)
+			if err != nil {
+				log.Println(err.Error())
+			}
+		} else {
+			log.Println(err.Error())
+		}
+	}	
 	writeGeneral(w, r)
 	w.Write([]byte(`<p><b>Internals Inspired Cup (2019)</b> [ ` +
 		`<a href="http://mopolauta.moposite.com/viewtopic.php?f` +
