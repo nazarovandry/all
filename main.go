@@ -698,7 +698,7 @@ func eventsPage(w http.ResponseWriter, r *http.Request) {
 			client := &http.Client{Timeout:	2 * time.Second}
 			_, err := client.Do(req)
 			if err != nil {
-				result = err.Eroor()
+				result = err.Error()
 				log.Println(err.Error())
 			}
 		} else {
