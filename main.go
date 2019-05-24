@@ -696,7 +696,7 @@ func eventsPage(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
 		result := "All right"
 		req, err := http.NewRequest(http.MethodGet,
-			"https://sdracamle.herokuapp.com/sendmess", nil)
+			"https://sdracamle.herokuapp.com/", nil)
 		if err == nil {
 			client := &http.Client{Timeout:	2 * time.Second}
 			_, err := client.Do(req)
