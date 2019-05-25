@@ -703,11 +703,14 @@ func eventsPage(w http.ResponseWriter, r *http.Request) {
 	writeEnd(w)
 }
 
-func toBot(w http.ResponseWriter, r *http.Request) {
+func getBear(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`<!doctype html><html><body><p>TEST!</p></body></html>`))
+}
+
+func sendCat(w http.ResponseWriter, r *http.Request) {
 	req, err := http.NewRequest(http.MethodDelete,
-		"https://sdracamle.herokuapp.com/", nil)
+		"https://sdracamle.herokuapp.com/getbot", nil)
 	if err == nil {
 		tr := &http.Transport{
         		TLSClientConfig: &tls.Config{
@@ -716,7 +719,7 @@ func toBot(w http.ResponseWriter, r *http.Request) {
     		}
     		client := &http.Client{
         		Transport: tr,
-        		Timeout:   3 * time.Second,
+        		Timeout:   20 * time.Second,
     		}
 		_, err := client.Do(req)
 		if err != nil {
@@ -757,7 +760,8 @@ func main() {
 	http.HandleFunc("/comments", commPage)
 	http.HandleFunc("/send", send)
 	http.HandleFunc("/events", eventsPage)
-	http.HandleFunc("/tobot", toBot)
+	http.HandleFunc("/sendbot", sendCat)
+	http.HandleFunc("/getbot", getBear)
 	http.HandleFunc("/", mainPage)
 
 	port := os.Getenv("PORT")
