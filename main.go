@@ -709,32 +709,35 @@ func getBear(w http.ResponseWriter, r *http.Request) {
 }
 
 func sendCat(w http.ResponseWriter, r *http.Request) {
-	req, err := http.NewRequest(http.MethodDelete,
-		"https://sdracamle.herokuapp.com/getbot", nil)
-	if err == nil {
-		tr := &http.Transport{
-        		TLSClientConfig: &tls.Config{
-            			InsecureSkipVerify: true,
-        		},
-    		}
-    		client := &http.Client{
-        		Transport: tr,
-        		Timeout:   20 * time.Second,
-    		}
-		_, err := client.Do(req)
-		if err != nil {
-			log.Println("client error: " + err.Error())
+	for "123" = "123" {
+		time.Sleep(10 * time.Second)
+		req, err := http.NewRequest(http.MethodDelete,
+			"https://sdracamle.herokuapp.com/getbot", nil)
+		if err == nil {
+			tr := &http.Transport{
+        			TLSClientConfig: &tls.Config{
+            				InsecureSkipVerify: true,
+        			},
+    			}
+    			client := &http.Client{
+        			Transport: tr,
+        			Timeout:   20 * time.Second,
+    			}
+			_, err := client.Do(req)
+			if err != nil {
+				log.Println("client error: " + err.Error())
+			} else {
+				log.Println("tobot-Done")
+				/*mu := &sync.Mutex{}
+				mu.Lock()
+				data, _ := ioutil.ReadFile("logs.txt")
+				newdata := string(data) + "\n" + result
+				_ = ioutil.WriteFile("logs.txt", []byte(newdata), 0644)
+				mu.Unlock()*/
+			}
 		} else {
-			log.Println("tobot-Done")
-			/*mu := &sync.Mutex{}
-			mu.Lock()
-			data, _ := ioutil.ReadFile("logs.txt")
-			newdata := string(data) + "\n" + result
-			_ = ioutil.WriteFile("logs.txt", []byte(newdata), 0644)
-			mu.Unlock()*/
+			log.Println("request error" + err.Error())
 		}
-	} else {
-		log.Println("request error" + err.Error())
 	}
 }
 
