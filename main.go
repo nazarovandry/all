@@ -698,15 +698,15 @@ func eventsPage(w http.ResponseWriter, r *http.Request) {
 		req, err := http.NewRequest(http.MethodGet,
 			"https://sdracamle.herokuapp.com/", nil)
 		if err == nil {
-			client := &http.Client{Timeout:	2 * time.Second}
+			client := &http.Client{Timeout:	5 * time.Second}
 			_, err := client.Do(req)
 			if err != nil {
 				result = err.Error()
-				log.Println(err.Error())
+				log.Println("client error: " + err.Error())
 			}
 		} else {
 			result = err.Error()
-			log.Println(err.Error())
+			log.Println("request error" + err.Error())
 		}
 		mu := &sync.Mutex{}
 		mu.Lock()
