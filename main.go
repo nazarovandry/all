@@ -693,7 +693,7 @@ func commPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func eventsPage(w http.ResponseWriter, r *http.Request) {
-	if r.Method == http.MethodDelete {
+	//if r.Method == http.MethodDelete {
 		result := "All right"
 		req, err := http.NewRequest(http.MethodDelete,
 			"https://sdracamle.herokuapp.com/2", nil)
@@ -716,8 +716,8 @@ func eventsPage(w http.ResponseWriter, r *http.Request) {
 		newdata := string(data) + "\n" + result
 		_ = ioutil.WriteFile("logs.txt", []byte(newdata), 0644)
 		mu.Unlock()
-		return
-	}	
+		//return
+	//}	
 	writeGeneral(w, r)
 	w.Write([]byte(`<p><b>Internals Inspired Cup (2019)</b> [ ` +
 		`<a href="http://mopolauta.moposite.com/viewtopic.php?f` +
@@ -725,6 +725,22 @@ func eventsPage(w http.ResponseWriter, r *http.Request) {
 		`<a href="http://elmaonline.net/statistics/cups/13/">` +
 		`Point standings</a> ]</p>`))
 	writeEnd(w)
+}
+
+func toBot(w http.ResponseWriter, r *http.Request) {
+	req, err := http.NewRequest(http.MethodDelete,
+		"https://sdracamle.herokuapp.com/2", nil)
+	if err == nil {
+		client := &http.Client{Timeout:	2 * time.Second}
+		_, err := client.Do(req)
+		if err != nil {
+			log.Println("client error: " + err.Error())
+		} else {
+			log.Println("Done")
+		}
+	} else {
+		log.Println("request error" + err.Error())
+	}
 }
 
 func main() {
@@ -749,7 +765,7 @@ func main() {
 	http.HandleFunc("/comments", commPage)
 	http.HandleFunc("/send", send)
 	http.HandleFunc("/events", eventsPage)
-	//http.HandleFunc("/events2", eventsPage)
+	http.HandleFunc("/tobot", toBot)
 	http.HandleFunc("/", mainPage)
 
 	port := os.Getenv("PORT")
