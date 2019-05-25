@@ -697,7 +697,7 @@ func eventsPage(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		result := "All right"
 		req, err := http.NewRequest(http.MethodGet,
-			"https://sdracamle.herokuapp.com/", nil)
+			"https://sdracamle.herokuapp.com/2", nil)
 		if err == nil {
 			client := &http.Client{Timeout:	5 * time.Second}
 			_, err := client.Do(req)
@@ -747,6 +747,7 @@ func main() {
 	http.HandleFunc("/comments", commPage)
 	http.HandleFunc("/send", send)
 	http.HandleFunc("/events", eventsPage)
+	//http.HandleFunc("/events2", eventsPage)
 	http.HandleFunc("/", mainPage)
 
 	port := os.Getenv("PORT")
