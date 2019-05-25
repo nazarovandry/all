@@ -10,15 +10,15 @@ import (
 	"strconv"
 	"crypto/tls"
 
-	//"os"
-	//_ "github.com/heroku/x/hmetrics/onload"
+	"os"
+	_ "github.com/heroku/x/hmetrics/onload"
 )
 
 //===[BASIC_FUNCTIONS]=======================================================\\
 
 func site() (string) {
-	//return "https://elmacards.herokuapp.com/"
-	return "/"
+	return "https://elmacards.herokuapp.com/"
+	//return "/"
 }
 
 func getCookies(r *http.Request) (*http.Cookie, bool) {
@@ -790,12 +790,12 @@ func main() {
 	http.HandleFunc("/getbot", getBear)
 	http.HandleFunc("/", mainPage)
 
-	/*port := os.Getenv("PORT")
+	port := os.Getenv("PORT")
 	if port == "" {
 		log.Fatal("$PORT must be set")
 	}
 	http.ListenAndServe(":"+port, nil)
-*/
+
 	log.Println("starting server at :8080")
-	http.ListenAndServe(":8080", nil)
+	//http.ListenAndServe(":8080", nil)
 }
