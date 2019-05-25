@@ -10,13 +10,45 @@ import (
 	"strconv"
 	"crypto/tls"
 
-	"os"
-	_ "github.com/heroku/x/hmetrics/onload"
+	//"os"
+	//_ "github.com/heroku/x/hmetrics/onload"
 )
 
+//===[BASIC_FUNCTIONS]=======================================================\\
+
 func site() (string) {
-	return "https://elmacards.herokuapp.com/"
-	//return "/"
+	//return "https://elmacards.herokuapp.com/"
+	return "/"
+}
+
+func getCookies(r *http.Request) (*http.Cookie, bool) {
+	session, err := r.Cookie("session_id")
+	logged := err != http.ErrNoCookie
+	if logged {
+		return session, logged
+	}
+	return nil, logged
+}
+
+func adminName() (string) {
+	return "AndrY"
+}
+
+func admin(logged bool, session *http.Cookie) (bool) {
+	return logged && session.Value == adminName()
+}
+
+func wrong(s string) (bool) {
+	return s == "" || strings.Contains(s, " ") || strings.Contains(s, "!") ||
+		strings.Contains(s, "\n") || strings.Contains(s, "&") ||
+		strings.Contains(s, "?") || strings.Contains(s, "\t") || len(s) > 30
+}
+
+func getShow (s string) string {
+	if s == "on" {
+		return "show"
+	}
+	return "hide"
 }
 
 func writeEnd(w http.ResponseWriter) {
@@ -27,13 +59,29 @@ func writeEnd(w http.ResponseWriter) {
 	`))
 }
 
+func hiddenPic() (string) {
+	mu := &sync.Mutex{}
+	mu.Lock()
+	cards, _ := ioutil.ReadFile("cards.txt")
+	mu.Unlock()
+	array := strings.Split(string(cards), "\n")
+	for _, ar := range array {
+		first := strings.Split(string(ar), " ")
+		if len(first) > 1 && first[0] == "hide" {
+			return first[1]
+		}
+	}
+	return ""
+}
+
+//===[WRITE_HTML_PAGE_BEGINNING]=============================================\\
+
 func writeGeneral(w http.ResponseWriter, r *http.Request) {
-	session, err := r.Cookie("session_id")
-	logged := err != http.ErrNoCookie
+	session, logged := getCookies(r)
 	w.Write([]byte(`<!doctype html>
 	<html>
 		<head>
-			<title>Elma Cards</title>
+			<title>Elma Cards Site</title>
 			<style type="text/css">
 			body {
 				background:	#808080;
@@ -42,6 +90,9 @@ func writeGeneral(w http.ResponseWriter, r *http.Request) {
 				background:	#DCDCDC;
 				border:		1px groove black;
 				padding:	10px;
+			}
+			.vertical {
+				border-right:	1px solid black;
 			}
 			#text {
 				background:	#DCDCDC;
@@ -72,13 +123,18 @@ func writeGeneral(w http.ResponseWriter, r *http.Request) {
 		</head>
 		<body>
 			<div id="head">
-				<h1>Elma Cards</h1>`))
+				<table cellpadding="15">
+				<tr>
+				<td class="vertical">
+					<p><font face="verdana" size="20"> Elma Cards </font></p>
+				</td>
+				<td>`))
 	if logged {
 		w.Write([]byte(`
 		<form action="/action" method="post" class="reg-form">
 		<div class="form-row">
-			<p>Hi, ` + session.Value + `)
-			<input type="submit" name="action" value="Logout">
+			<p>Hi, ` + session.Value + `)</p>
+			<p><input type="submit" name="action" value="Logout">
 			<input type="submit" name="action" value="Change password">
 			</p>
 		</div>
@@ -88,8 +144,8 @@ func writeGeneral(w http.ResponseWriter, r *http.Request) {
 		<form action="/login" method="post" class="reg-form">
 		<div class="form-row">
 			<label for="form_name">Name: </label>
-    		<input type="text" id="form_name" name="name">
-  		</div>
+			<input type="text" id="form_name" name="name">
+		</div>
 		<div class="form-row">
 			<label for="form_pw">Password: </label>
 			<input type="password" id="form_pw" name="password">
@@ -99,7 +155,8 @@ func writeGeneral(w http.ResponseWriter, r *http.Request) {
 		</div>
 		</form>`))
 	}
-	w.Write([]byte(`
+	w.Write([]byte(`	
+		</td></tr></table>
 		</div>
 		<div id="menu">
 			<div><a href="` + site() + `">Standings</a></div>
@@ -112,22 +169,12 @@ func writeGeneral(w http.ResponseWriter, r *http.Request) {
 	`))
 }
 
+//===[PAGES]=================================================================\\
+
 func mainPage(w http.ResponseWriter, r *http.Request) {
-	/*req, err := http.NewRequest(http.MethodGet,
-		"https://elmacards.herokuapp.com/events", nil)
-	if err == nil {
-		client := &http.Client{Timeout:	time.Second}
-		_, err := client.Do(req)
-		if err != nil {
-			log.Println(err.Error())
-		}
-	} else {
-		log.Println(err.Error())
-	}*/
-	session, err := r.Cookie("session_id")
-	logged := err != http.ErrNoCookie
+	session, logged := getCookies(r)
 	writeGeneral(w, r)
-	if logged && session.Value == "andry" {
+	if admin(logged, session) {
 		w.Write([]byte(`
 		<form action="/users" method="post" class="reg-form">
 		<div class="form-row">
@@ -207,13 +254,18 @@ func mainPage(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`
 		</p>  Cards are given for participating in some cups, level packs` +
 		` and etc. Probably these crads will be printed in plactic and sent` +
-		` (ofc with better design).<p>
-		<form action="/action" method="post" class="reg-form">
-		<div class="form-row">
-			<input type="submit" name="action" value="Show/hide cards">
-		</div>
-		</form>
-		<table border="1" bgcolor="white">
+		` (ofc with better design).<p>`))
+	if logged {
+		w.Write([]byte(`
+			<form action="/action" method="post" class="reg-form">
+			<div class="form-row">
+				<input type="submit" name="action" value="Show/hide cards">
+			</div>
+			</form>
+		`))
+	}
+	w.Write([]byte(`
+		<table border bgcolor="white">
 			<tr>
 				<th>Name</th>
 				<th>Cards</th>
@@ -226,16 +278,14 @@ func mainPage(w http.ResponseWriter, r *http.Request) {
 	lines := strings.Split(string(data), "\n")
 	for _, line := range lines {
 		elems := strings.Split(line, " ")
-		w.Write([]byte(
-			`<tr>
-				<td>` + elems[0] + `</td><td>`))
 		if len(elems) > 2 {
+			w.Write([]byte(`<tr><td>` + elems[0] + `</td><td>`))
 			links := strings.Split(elems[2], "&")
 			for _, link := range links {
 				pic := strings.Split(link, "?")
 				if len(pic) > 1 && (pic[1] == "show" ||
 					(logged && elems[0] == session.Value) ||
-					(logged && session.Value == "andry")){
+					admin(logged, session)){
 					w.Write([]byte(`
 					<img src=` + pic[0] + `>`))
 				} else {
@@ -243,31 +293,62 @@ func mainPage(w http.ResponseWriter, r *http.Request) {
 					<img src=` + hiddenUrl + `>`))
 				}
 			}
+			w.Write([]byte(`</td></tr>`))
 		}
-		w.Write([]byte(`</td></tr>`))
 	}
 	w.Write([]byte(`</table>`))
 	writeEnd(w)
 }
 
-func hiddenPic() (string) {
+func commPage(w http.ResponseWriter, r *http.Request) {
+	_, logged := getCookies(r)
+	writeGeneral(w, r)
+	w.Write([]byte(`<form action="/send" method="post" class="reg-form">`))
+	if !logged {
+		w.Write([]byte(`
+		<div class="form-row">
+			<label for="form_url">Who are you? </label>
+    		<input type="text" id="form_name" name="name">
+  		</div>`))
+	}
+	w.Write([]byte(`
+		<div class="form-row">
+			<label for="form_list">Comment: </label>
+			<textarea rows="1" cols="30" name="mess"></textarea>
+			<input type="submit" name="send" value="Send">
+		</div>
+		</form>
+		<p></p>`))
 	mu := &sync.Mutex{}
 	mu.Lock()
-	cards, _ := ioutil.ReadFile("cards.txt")
+	data, _ := ioutil.ReadFile("comm.txt")
 	mu.Unlock()
-	array := strings.Split(string(cards), "\n")
+	array := strings.Split(string(data), "\n")
 	for _, ar := range array {
-		first := strings.Split(string(ar), " ")
-		if len(first) > 1 && first[0] == "hide" {
-			return first[1]
+		first := strings.SplitN(string(ar), " ", 4)
+		if len(first) >= 4 {
+			w.Write([]byte(`<p><span style="color:#8B0000">[` +
+				first[0] + ` ` + first[1] + `]</span> `))
+			w.Write([]byte(`<b>` + first[2] + `: </b>` + first[3] + `</p>`))
 		}
 	}
-	return ""
+	writeEnd(w)
 }
 
+func eventsPage(w http.ResponseWriter, r *http.Request) {
+	writeGeneral(w, r)
+	w.Write([]byte(`<p><b>Internals Inspired Cup (2019)</b> [ ` +
+		`<a href="http://mopolauta.moposite.com/viewtopic.php?f` +
+		`=3&p=264423#p=264423/">Info</a> | ` +
+		`<a href="http://elmaonline.net/statistics/cups/13/">` +
+		`Point standings</a> ]</p>`))
+	writeEnd(w)
+}
+
+//===[ADMIN_CARDS_OPERATIONS]================================================\\
+
 func setPictures(w http.ResponseWriter, r *http.Request) {
-	session, err := r.Cookie("session_id")
-	logged := err != http.ErrNoCookie
+	session, logged := getCookies(r)
 	if !logged || session.Value != "andry" {
 		http.Redirect(w, r, "/", http.StatusFound)
 	}
@@ -323,15 +404,10 @@ func getUrl(card string) (string) {
 	return ""
 }
 
-func wrong(s string) (bool) {
-	return s == "" || strings.Contains(s, " ") ||
-		strings.Contains(s, "\n") || strings.Contains(s, "&") ||
-		strings.Contains(s, "?") || strings.Contains(s, "\t")
-}
+//===[ADMIN_USERS_OPERATIONS]================================================\\
 
 func users(w http.ResponseWriter, r *http.Request) {
-	session, err := r.Cookie("session_id")
-	logged := err != http.ErrNoCookie
+	session, logged := getCookies(r)
 	name := r.FormValue("name")
 	pass := r.FormValue("password")
 	pass2 := r.FormValue("password2")
@@ -385,8 +461,7 @@ func users(w http.ResponseWriter, r *http.Request) {
 }
 
 func operCard(w http.ResponseWriter, r *http.Request) {
-	session, err := r.Cookie("session_id")
-	logged := err != http.ErrNoCookie
+	session, logged := getCookies(r)
 	name := r.FormValue("name")
 	num := r.FormValue("num")
 	button := r.FormValue("card_oper")
@@ -435,14 +510,12 @@ func operCard(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-func getShow (s string) string {
-	if s == "on" {
-		return "show"
-	}
-	return "hide"
-}
-
 func addCard(w http.ResponseWriter, r *http.Request) {
+	session, logged := getCookies(r)
+	if !admin(logged, session) {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
 	card := r.FormValue("card")
 	name := r.FormValue("name")
 	shown := r.FormValue("shown")
@@ -468,10 +541,11 @@ func addCard(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
+//===[FULL_DATA]=============================================================\\
+
 func download(w http.ResponseWriter, r *http.Request) {
-	session, err := r.Cookie("session_id")
-	logged := err != http.ErrNoCookie
-	if logged && session.Value == "andry" {
+	session, logged := getCookies(r)
+	if admin(logged, session) {
 		mu := &sync.Mutex{}
 		mu.Lock()
 		list, _ := ioutil.ReadFile("list.txt")
@@ -492,9 +566,8 @@ func download(w http.ResponseWriter, r *http.Request) {
 }
 
 func reload(w http.ResponseWriter, r *http.Request) {
-	session, err := r.Cookie("session_id")
-	logged := err != http.ErrNoCookie
-	if !logged || session.Value != "andry" {
+	session, logged := getCookies(r)
+	if !admin(logged, session) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
 	}
@@ -502,7 +575,7 @@ func reload(w http.ResponseWriter, r *http.Request) {
 	mu := &sync.Mutex{}
 	mu.Lock()
 	saved = strings.Replace(saved, "\r", "", -1)
-	blocks := strings.Split(saved, "!")
+	blocks := strings.SplitN(saved, "!", 3)
 	if len(blocks) < 3 {
 		return
 		http.Redirect(w, r, "/", http.StatusFound)
@@ -513,6 +586,8 @@ func reload(w http.ResponseWriter, r *http.Request) {
 	mu.Unlock()
 	http.Redirect(w, r, "/", http.StatusFound)
 }
+
+//===[LOGIN]=================================================================\\
 
 func allRight(name string, pass string) (bool) {
 	if wrong(name) || wrong(pass) {
@@ -547,13 +622,13 @@ func loginPage(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
+//===[USER_ACTIONS]==========================================================\\
+
 func actionPage(w http.ResponseWriter, r *http.Request) {
-	session, err := r.Cookie("session_id")
-	logged := err != http.ErrNoCookie
+	session, logged := getCookies(r)
 	button := r.FormValue("action")
 	if button == "Logout" {
-		session, err := r.Cookie("session_id")
-		if err == http.ErrNoCookie {
+		if !logged {
 			http.Redirect(w, r, "/", http.StatusFound)
 			return
 		}
@@ -565,7 +640,7 @@ func actionPage(w http.ResponseWriter, r *http.Request) {
 		writeGeneral(w, r)
 		w.Write([]byte(`
 		<form action="/opercard" method="post" class="reg-form">
-		<table border="1" bgcolor="white">
+		<table border bgcolor="white">
 			<tr>
 				<th>Card</th>
 				<th>Shown</th>
@@ -633,8 +708,7 @@ func actionPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func send(w http.ResponseWriter, r *http.Request) {
-	session, err := r.Cookie("session_id")
-	logged := err != http.ErrNoCookie
+	session, logged := getCookies(r)
 	name := r.FormValue("name")
 	mess := r.FormValue("mess")
 	send := r.FormValue("send")
@@ -657,51 +731,7 @@ func send(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/comments", http.StatusFound)
 }
 
-func commPage(w http.ResponseWriter, r *http.Request) {
-	_, err := r.Cookie("session_id")
-	logged := err != http.ErrNoCookie
-	writeGeneral(w, r)
-	w.Write([]byte(`<form action="/send" method="post" class="reg-form">`))
-	if !logged {
-		w.Write([]byte(`
-		<div class="form-row">
-			<label for="form_url">Who are you? </label>
-    		<input type="text" id="form_name" name="name">
-  		</div>`))
-	}
-	w.Write([]byte(`
-		<div class="form-row">
-			<label for="form_list">Comment: </label>
-			<textarea rows="1" cols="30" name="mess"></textarea>
-			<input type="submit" name="send" value="Send">
-		</div>
-		</form>
-		<p></p>`))
-	mu := &sync.Mutex{}
-	mu.Lock()
-	data, _ := ioutil.ReadFile("comm.txt")
-	mu.Unlock()
-	array := strings.Split(string(data), "\n")
-	for _, ar := range array {
-		first := strings.SplitN(string(ar), " ", 4)
-		if len(first) >= 4 {
-			w.Write([]byte(`<p><span style="color:#8B0000">[` +
-				first[0] + ` ` + first[1] + `]</span> `))
-			w.Write([]byte(`<b>` + first[2] + `: </b>` + first[3] + `</p>`))
-		}
-	}
-	writeEnd(w)
-}
-
-func eventsPage(w http.ResponseWriter, r *http.Request) {
-	writeGeneral(w, r)
-	w.Write([]byte(`<p><b>Internals Inspired Cup (2019)</b> [ ` +
-		`<a href="http://mopolauta.moposite.com/viewtopic.php?f` +
-		`=3&p=264423#p=264423/">Info</a> | ` +
-		`<a href="http://elmaonline.net/statistics/cups/13/">` +
-		`Point standings</a> ]</p>`))
-	writeEnd(w)
-}
+//===[BOT]===================================================================\\
 
 func getBear(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
@@ -715,14 +745,14 @@ func sendCat(w http.ResponseWriter, r *http.Request) {
 			"https://sdracamle.herokuapp.com/getbot", nil)
 		if err == nil {
 			tr := &http.Transport{
-        			TLSClientConfig: &tls.Config{
-            				InsecureSkipVerify: true,
-        			},
-    			}
-    			client := &http.Client{
-        			Transport: tr,
-        			Timeout:   20 * time.Second,
-    			}
+				TLSClientConfig: &tls.Config{
+					InsecureSkipVerify: true,
+					},
+				}
+				client := &http.Client{
+					Transport: tr,
+					Timeout:   20 * time.Second,
+				}
 			_, err := client.Do(req)
 			if err != nil {
 				log.Println("client error: " + err.Error())
@@ -734,6 +764,8 @@ func sendCat(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 }
+
+//===[MAIN]==================================================================\\
 
 func main() {
 	list, _ := ioutil.ReadFile("list.txt")
@@ -761,12 +793,12 @@ func main() {
 	http.HandleFunc("/getbot", getBear)
 	http.HandleFunc("/", mainPage)
 
-	port := os.Getenv("PORT")
+	/*port := os.Getenv("PORT")
 	if port == "" {
 		log.Fatal("$PORT must be set")
 	}
 	http.ListenAndServe(":"+port, nil)
-
+*/
 	log.Println("starting server at :8080")
-	//http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":8080", nil)
 }
