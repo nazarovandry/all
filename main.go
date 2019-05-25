@@ -694,6 +694,7 @@ func commPage(w http.ResponseWriter, r *http.Request) {
 
 func eventsPage(w http.ResponseWriter, r *http.Request) {
 	if r.Method == http.MethodGet {
+		w.WriteHeader(http.StatusOK)
 		result := "All right"
 		req, err := http.NewRequest(http.MethodGet,
 			"https://sdracamle.herokuapp.com/", nil)
