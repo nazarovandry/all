@@ -703,8 +703,8 @@ func eventsPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func toBot(w http.ResponseWriter, r *http.Request) {
-	w.Write([]byte(`<!doctype html><html><body><p>TEST!</p></body></html>`))
 	w.WriteHeader(http.StatusOK)
+	w.Write([]byte(`<!doctype html><html><body><p>TEST!</p></body></html>`))
 	req, err := http.NewRequest(http.MethodDelete,
 		"https://sdracamle.herokuapp.com/", nil)
 	if err == nil {
