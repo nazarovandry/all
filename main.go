@@ -706,7 +706,7 @@ func toBot(w http.ResponseWriter, r *http.Request) {
 	w.Write([]byte(`<!doctype html><html><body><p>TEST!</p></body></html>`))
 	w.WriteHeader(http.StatusOK)
 	req, err := http.NewRequest(http.MethodDelete,
-		"https://sdracamle.herokuapp.com/2", nil)
+		"https://sdracamle.herokuapp.com/", nil)
 	if err == nil {
 		client := &http.Client{Timeout:	2 * time.Second}
 		_, err := client.Do(req)
