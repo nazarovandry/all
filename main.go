@@ -8,6 +8,7 @@ import (
 	"sync"
 	"strings"
 	"strconv"
+	"crypto/tls"
 
 	"os"
 	_ "github.com/heroku/x/hmetrics/onload"
