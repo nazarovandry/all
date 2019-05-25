@@ -1,1 +1,1 @@
-
+2019-05-24 20:07:42 andry This is test version while. The site goes to sleep after each 30 minutes of the time nobody uses it with the loss of all the data.
