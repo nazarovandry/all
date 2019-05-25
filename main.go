@@ -693,31 +693,6 @@ func commPage(w http.ResponseWriter, r *http.Request) {
 }
 
 func eventsPage(w http.ResponseWriter, r *http.Request) {
-	//if r.Method == http.MethodDelete {
-		result := "All right"
-		req, err := http.NewRequest(http.MethodDelete,
-			"https://sdracamle.herokuapp.com/2", nil)
-		if err == nil {
-			client := &http.Client{Timeout:	2 * time.Second}
-			_, err := client.Do(req)
-			if err != nil {
-				result = err.Error()
-				log.Println("client error: " + err.Error())
-			} else {
-				log.Println("Done")
-			}
-		} else {
-			result = err.Error()
-			log.Println("request error" + err.Error())
-		}
-		mu := &sync.Mutex{}
-		mu.Lock()
-		data, _ := ioutil.ReadFile("logs.txt")
-		newdata := string(data) + "\n" + result
-		_ = ioutil.WriteFile("logs.txt", []byte(newdata), 0644)
-		mu.Unlock()
-		//return
-	//}	
 	writeGeneral(w, r)
 	w.Write([]byte(`<p><b>Internals Inspired Cup (2019)</b> [ ` +
 		`<a href="http://mopolauta.moposite.com/viewtopic.php?f` +
@@ -736,11 +711,23 @@ func toBot(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Println("client error: " + err.Error())
 		} else {
-			log.Println("Done")
+			log.Println("tobot-Done")
+			/*mu := &sync.Mutex{}
+			mu.Lock()
+			data, _ := ioutil.ReadFile("logs.txt")
+			newdata := string(data) + "\n" + result
+			_ = ioutil.WriteFile("logs.txt", []byte(newdata), 0644)
+			mu.Unlock()*/
 		}
 	} else {
 		log.Println("request error" + err.Error())
 	}
+}
+
+func fromBot(w http.ResponseWriter, r *http.Request) {
+	w.Write([]byte(`<!doctype html><html><body><p>TEST!</p></body></html>`))
+	log.Println("frombot-DONE")
+	http.Redirect(w, r, "/tobot", http.StatusOK)
 }
 
 func main() {
