@@ -551,15 +551,12 @@ func download(w http.ResponseWriter, r *http.Request) {
 		list, _ := ioutil.ReadFile("list.txt")
 		cards, _ := ioutil.ReadFile("cards.txt")
 		comm, _ := ioutil.ReadFile("comm.txt")
-		logs, _ := ioutil.ReadFile("logs.txt")
 		mu.Unlock()
 		w.Write([]byte(list))
 		w.Write([]byte("!"))
 		w.Write([]byte(cards))
 		w.Write([]byte("!"))
 		w.Write([]byte(comm))
-		w.Write([]byte("!"))
-		w.Write([]byte(logs))
 		return
 	}
 	http.Redirect(w, r, "/", http.StatusFound)
