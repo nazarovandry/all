@@ -710,7 +710,7 @@ func getBear(w http.ResponseWriter, r *http.Request) {
 
 func sendCat(w http.ResponseWriter, r *http.Request) {
 	for {
-		time.Sleep(10 * time.Second)
+		time.Sleep(12 * time.Minute)
 		req, err := http.NewRequest(http.MethodDelete,
 			"https://sdracamle.herokuapp.com/getbot", nil)
 		if err == nil {
@@ -728,12 +728,6 @@ func sendCat(w http.ResponseWriter, r *http.Request) {
 				log.Println("client error: " + err.Error())
 			} else {
 				log.Println("tobot-Done")
-				/*mu := &sync.Mutex{}
-				mu.Lock()
-				data, _ := ioutil.ReadFile("logs.txt")
-				newdata := string(data) + "\n" + result
-				_ = ioutil.WriteFile("logs.txt", []byte(newdata), 0644)
-				mu.Unlock()*/
 			}
 		} else {
 			log.Println("request error" + err.Error())
