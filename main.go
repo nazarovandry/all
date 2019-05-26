@@ -410,7 +410,7 @@ func cardsPage(w http.ResponseWriter, r *http.Request) {
 	}
 	for i, nameList := range cardList {
 		total := 0
-		for name, amount := range nameList {
+		for _, amount := range nameList {
 			total += amount
 		}
 		if total > 0 {
