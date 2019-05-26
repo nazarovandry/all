@@ -183,7 +183,7 @@ func writeGeneral(w http.ResponseWriter, r *http.Request) {
 		</div>
 		<div id="menu">
 			<div><a href="` + site() + `">Standings</a></div>
-			<div><a href="` + site() + `events">Events</a></div>
+			<div><a href="` + site() + `contests">Contests</a></div>
 			<div><a href="` + site() + `comments">Comments</a></div>
 			<div><a href="` + site() + `cards">Cards</a></div>
 			<p></p>
@@ -401,12 +401,12 @@ func cardsPage(w http.ResponseWriter, r *http.Request) {
 			links := strings.Split(elems[2], "&")
 			for _, link := range links {
 				pic := strings.Split(link, "?")
-				if len(pic) > 1 {
+				if len(pic) > 1 && pic[1] == "show" {
 					_, exists := cardList[pic[0]]
 					if exists {
 						value, exists2 := cardList[pic[0]][elems[0]]
 						if exists2 {
-							cardList[pic[0]][elems[0]] += value
+							cardList[pic[0]][elems[0]] += 1
 						} else {
 							cardList[pic[0]][elems[0]] = 1
 						}
@@ -877,7 +877,7 @@ func main() {
 	http.HandleFunc("/download", download)
 	http.HandleFunc("/comments", commPage)
 	http.HandleFunc("/send", send)
-	http.HandleFunc("/events", eventsPage)
+	http.HandleFunc("/contests", eventsPage)
 	http.HandleFunc("/cards", cardsPage)
 	http.HandleFunc("/sendbot", sendCat)
 	http.HandleFunc("/getbot", getBear)
