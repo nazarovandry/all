@@ -10,15 +10,15 @@ import (
 	"strconv"
 	"crypto/tls"
 
-	"os"
-	_ "github.com/heroku/x/hmetrics/onload"
+	//"os"
+	//_ "github.com/heroku/x/hmetrics/onload"
 )
 
 //===[BASIC_FUNCTIONS]=======================================================\\
 
 func site() (string) {
-	return "https://elmacards.herokuapp.com/"
-	//return "/"
+	//return "https://elmacards.herokuapp.com/"
+	return "/"
 }
 
 func getCookies(r *http.Request) (*http.Cookie, bool) {
@@ -74,6 +74,20 @@ func hiddenPic() (string) {
 	return ""
 }
 
+func howMany(a int, s string) (string) {
+	if a == 1 {
+		return s
+	}
+	return s + "s"
+}
+
+func openText(s string) (string) {
+	if len(s) > 2 {
+		return s[1 : len(s) - 2]
+	}
+	return ""
+}
+
 //===[WRITE_HTML_PAGE_BEGINNING]=============================================\\
 
 func writeGeneral(w http.ResponseWriter, r *http.Request) {
@@ -119,6 +133,15 @@ func writeGeneral(w http.ResponseWriter, r *http.Request) {
 				color:				blue;
 				text-decoration:	none;
 			}
+			#text table, #text td, #text th {
+				border:				1px solid black;
+				border-collapse:	collapse;
+				padding:			5px;
+				vertical-align:		top;
+			}
+			#text th {
+				background:	#29DD97;
+			}
 			</style>
 		</head>
 		<body>
@@ -162,6 +185,7 @@ func writeGeneral(w http.ResponseWriter, r *http.Request) {
 			<div><a href="` + site() + `">Standings</a></div>
 			<div><a href="` + site() + `events">Events</a></div>
 			<div><a href="` + site() + `comments">Comments</a></div>
+			<div><a href="` + site() + `cards">Cards</a></div>
 			<p></p>
 			<p><span style="color:#808080">&copy;AndrY 2019</span></p>
 		</div>
@@ -265,7 +289,7 @@ func mainPage(w http.ResponseWriter, r *http.Request) {
 		`))
 	}
 	w.Write([]byte(`
-		<table border bgcolor="white">
+		<table bgcolor="white">
 			<tr>
 				<th>Name</th>
 				<th>Cards</th>
@@ -342,6 +366,73 @@ func eventsPage(w http.ResponseWriter, r *http.Request) {
 		`=3&p=264423#p=264423/">Info</a> | ` +
 		`<a href="http://elmaonline.net/statistics/cups/13/">` +
 		`Point standings</a> ]</p>`))
+	writeEnd(w)
+}
+
+func cardsPage(w http.ResponseWriter, r *http.Request) {
+	writeGeneral(w, r)
+	w.Write([]byte(`
+		<table border bgcolor="white">
+			<tr>
+				<th>Card</th>
+				<th>Info</th>
+			</tr>`))
+	mu := &sync.Mutex{}
+	mu.Lock()
+	cards, _ := ioutil.ReadFile("cards.txt")
+	list, _ := ioutil.ReadFile("list.txt")
+	mu.Unlock()
+	cardList := map[string]map[string]int{}
+	infoList := map[string]string{}
+	rows := strings.Split(string(cards), "\n")
+	for _, row := range rows {
+		elems := strings.SplitN(row, " ", 3)
+		if len(elems) > 1 {
+			cardList[elems[1]] = map[string]int{}
+			if len(elems) > 2 {
+				infoList[elems[1]] = openText(elems[2])
+			}
+		}
+	}
+	lines := strings.Split(string(list), "\n")
+	for _, line := range lines {
+		elems := strings.Split(line, " ")
+		if len(elems) > 2 {
+			links := strings.Split(elems[2], "&")
+			for _, link := range links {
+				pic := strings.Split(link, "?")
+				if len(pic) > 1 {
+					_, exists := cardList[pic[0]]
+					if exists {
+						value, exists2 := cardList[pic[0]][elems[0]]
+						if exists2 {
+							cardList[pic[0]][elems[0]] += value
+						} else {
+							cardList[pic[0]][elems[0]] = 1
+						}
+					}
+				}
+			}
+		}
+	}
+	for i, nameList := range cardList {
+		w.Write([]byte(`<tr><td><img src=` + i + `></td>`))
+		w.Write([]byte(`<td>`))
+		total := 0
+		info, exists := infoList[i]
+		if exists {
+			w.Write([]byte(`<p>` + info + `</p><hr>`))
+		}
+		for name, amount := range nameList {
+			w.Write([]byte(`<p>` + name + `: ` +
+				strconv.Itoa(amount) + ` ` + howMany(amount, "card") + `</p>`))
+			total += amount
+		}
+		w.Write([]byte(`<p><b>Total amount is <span style="color:#DC143C">` +
+			strconv.Itoa(total) + `</span></b></p>`))
+		w.Write([]byte(`</td></tr>`))
+	}
+	w.Write([]byte(`</table>`))
 	writeEnd(w)
 }
 
@@ -733,6 +824,7 @@ func send(w http.ResponseWriter, r *http.Request) {
 func getBear(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`<!doctype html><html><body><p>TEST!</p></body></html>`))
+	log.Println("frombot-Got")
 }
 
 func sendCat(w http.ResponseWriter, r *http.Request) {
@@ -786,16 +878,17 @@ func main() {
 	http.HandleFunc("/comments", commPage)
 	http.HandleFunc("/send", send)
 	http.HandleFunc("/events", eventsPage)
+	http.HandleFunc("/cards", cardsPage)
 	http.HandleFunc("/sendbot", sendCat)
 	http.HandleFunc("/getbot", getBear)
 	http.HandleFunc("/", mainPage)
 
-	port := os.Getenv("PORT")
+	/*port := os.Getenv("PORT")
 	if port == "" {
 		log.Fatal("$PORT must be set")
 	}
 	http.ListenAndServe(":"+port, nil)
-
+*/
 	log.Println("starting server at :8080")
-	//http.ListenAndServe(":8080", nil)
+	http.ListenAndServe(":8080", nil)
 }
