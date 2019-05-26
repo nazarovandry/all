@@ -737,7 +737,7 @@ func getBear(w http.ResponseWriter, r *http.Request) {
 
 func sendCat(w http.ResponseWriter, r *http.Request) {
 	for {
-		time.Sleep(12 * time.Minute)
+		time.Sleep(2 * time.Minute)
 		req, err := http.NewRequest(http.MethodDelete,
 			"https://sdracamle.herokuapp.com/getbot", nil)
 		if err == nil {
