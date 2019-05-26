@@ -81,13 +81,6 @@ func howMany(a int, s string) (string) {
 	return s + "s"
 }
 
-func openText(s string) (string) {
-	if len(s) > 2 {
-		return s[1 : len(s) - 2]
-	}
-	return ""
-}
-
 //===[WRITE_HTML_PAGE_BEGINNING]=============================================\\
 
 func writeGeneral(w http.ResponseWriter, r *http.Request) {
@@ -390,7 +383,7 @@ func cardsPage(w http.ResponseWriter, r *http.Request) {
 		if len(elems) > 1 {
 			cardList[elems[1]] = map[string]int{}
 			if len(elems) > 2 {
-				infoList[elems[1]] = openText(elems[2])
+				infoList[elems[1]] = elems[2]
 			}
 		}
 	}
@@ -416,21 +409,27 @@ func cardsPage(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	for i, nameList := range cardList {
-		w.Write([]byte(`<tr><td><img src=` + i + `></td>`))
-		w.Write([]byte(`<td>`))
 		total := 0
-		info, exists := infoList[i]
-		if exists {
-			w.Write([]byte(`<p>` + info + `</p><hr>`))
-		}
 		for name, amount := range nameList {
-			w.Write([]byte(`<p>` + name + `: ` +
-				strconv.Itoa(amount) + ` ` + howMany(amount, "card") + `</p>`))
 			total += amount
 		}
-		w.Write([]byte(`<p><b>Total amount is <span style="color:#DC143C">` +
-			strconv.Itoa(total) + `</span></b></p>`))
-		w.Write([]byte(`</td></tr>`))
+		if total > 0 {
+			w.Write([]byte(`<tr><td><img src=` + i + `></td>`))
+			w.Write([]byte(`<td>`))
+			info, exists := infoList[i]
+			if exists {
+				w.Write([]byte(`<table bgcolor="#B0E0E6">
+				<tr><td><p>` + info + `</p></td></tr></table>`))
+			}
+			for name, amount := range nameList {
+				w.Write([]byte(`<p>` + name + `: ` + strconv.Itoa(amount) +
+					` ` + howMany(amount, "card") + `</p>`))
+			}
+			w.Write([]byte(`<p>i
+				<b>Total amount is <span style="color:#DC143C">` +
+				strconv.Itoa(total) + `</span></b></p>`))
+			w.Write([]byte(`</td></tr>`))
+		}
 	}
 	w.Write([]byte(`</table>`))
 	writeEnd(w)
