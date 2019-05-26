@@ -404,7 +404,7 @@ func cardsPage(w http.ResponseWriter, r *http.Request) {
 				if len(pic) > 1 && pic[1] == "show" {
 					_, exists := cardList[pic[0]]
 					if exists {
-						value, exists2 := cardList[pic[0]][elems[0]]
+						_, exists2 := cardList[pic[0]][elems[0]]
 						if exists2 {
 							cardList[pic[0]][elems[0]] += 1
 						} else {
