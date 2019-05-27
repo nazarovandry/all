@@ -363,7 +363,7 @@ func eventsPage(w http.ResponseWriter, r *http.Request) {
 		<p> - participating (by the points)</p>
 		<p> - achieving secret areas (by amount)</p>
 		<p> - top5s in the events (by the points)</p>
-		<p> - challenges</p>`)
+		<p> - challenges</p>`))
 	writeEnd(w)
 }
 
