@@ -359,6 +359,11 @@ func eventsPage(w http.ResponseWriter, r *http.Request) {
 		`=3&p=264423#p=264423/">Info</a> | ` +
 		`<a href="http://elmaonline.net/statistics/cups/13/">` +
 		`Point standings</a> ]</p>`))
+	w.Write([]byte(`<p></p><p>Special cards are gven for:</p>
+		<p> - participating (by the points)</p>
+		<p> - achieving secret areas (by amount)</p>
+		<p> - top5s in the events (by the points)</p>
+		<p> - challenges</p>`)
 	writeEnd(w)
 }
 
@@ -425,8 +430,7 @@ func cardsPage(w http.ResponseWriter, r *http.Request) {
 				w.Write([]byte(`<p>` + name + `: ` + strconv.Itoa(amount) +
 					` ` + howMany(amount, "card") + `</p>`))
 			}
-			w.Write([]byte(`<p>i
-				<b>Total amount is <span style="color:#DC143C">` +
+			w.Write([]byte(`<p><b>Total amount is <span style="color:#DC143C">` +
 				strconv.Itoa(total) + `</span></b></p>`))
 			w.Write([]byte(`</td></tr>`))
 		}
