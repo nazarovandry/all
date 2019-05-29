@@ -649,11 +649,11 @@ func addCard(w http.ResponseWriter, r *http.Request, all *All) {
 //===[FULL_DATA]=============================================================\\
 
 func download(w http.ResponseWriter, r *http.Request, all *All) {
-	/*session, logged := getCookies(r)
+	session, logged := getCookies(r)
 	if !admin(logged, session) {
 		http.Redirect(w, r, "/", http.StatusFound)
 		return
-	}*/
+	}
 	all.mu.Lock()
 	for name, i := range all.cards {
 		w.Write([]byte(name + "(-ELEM-)" + (*i).url + "(-ELEM-)" + (*i).info))
