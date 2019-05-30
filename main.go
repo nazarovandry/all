@@ -951,7 +951,7 @@ func sendCat(w http.ResponseWriter, r *http.Request, all *All) {
 	all.mu.Lock()
 	if !(*all.botLock) {
 		all.mu.Unlock()
-		log.Println("No pls!")
+		log.Println("No pls!!")
 		return
 	}
 	*all.botLock = false
