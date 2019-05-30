@@ -46,6 +46,7 @@ type All struct {
 	mainPage	string
 	eventsPage	string
 	bot			*int
+	botLock		*bool
 }
 
 //===[BASIC_FUNCTIONS]=======================================================\\
@@ -763,6 +764,8 @@ func getAll(data string) (*All) {
 	all.eventsPage = parts[4]
 	bot := 0
 	all.bot = &bot
+	botLock := true
+	all.botLock = &botLock
 	return &all
 }
 
@@ -781,8 +784,8 @@ func reload(w http.ResponseWriter, r *http.Request, all *All) {
 	all.mainPage = tmp.mainPage
 	all.eventsPage = tmp.eventsPage
 	all.mu.Unlock()
-	bot := 0
-	all.bot = &bot
+	all.bot = tmp.bot
+	all.botLock = tmp.botLock
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
@@ -934,6 +937,7 @@ func getBear(w http.ResponseWriter, r *http.Request, all *All) {
 	}
 	if *all.bot < -2 {
 		*all.bot = 0
+		*all.botLock = true
 		all.mu.Unlock()
 		log.Println("HELP!")
 		go sendCat(w, r, all)
@@ -944,6 +948,14 @@ func getBear(w http.ResponseWriter, r *http.Request, all *All) {
 }
 
 func sendCat(w http.ResponseWriter, r *http.Request, all *All) {
+	all.mu.Lock()
+	if !(*all.botLock) {
+		all.mu.Unlock()
+		log.Println("No pls!")
+		return
+	}
+	*all.botLock = false
+	all.mu.Unlock()
 	for {
 		time.Sleep(3 * time.Minute)
 		req, err := http.NewRequest(http.MethodDelete,
@@ -960,6 +972,9 @@ func sendCat(w http.ResponseWriter, r *http.Request, all *All) {
 				}
 			_, err := client.Do(req)
 			if err != nil {
+				all.mu.Lock()
+				*all.bot = 0
+				all.mu.Unlock()
 				log.Println("client error: " + err.Error())
 			} else {
 				all.mu.Lock()
@@ -968,6 +983,9 @@ func sendCat(w http.ResponseWriter, r *http.Request, all *All) {
 				log.Println("tobot-Done ", *all.bot)
 			}
 		} else {
+			all.mu.Lock()
+			*all.bot = 0
+			all.mu.Unlock()
 			log.Println("request error" + err.Error())
 		}
 	}
