@@ -45,6 +45,7 @@ type All struct {
 	mu			sync.Mutex
 	mainPage	string
 	eventsPage	string
+	bot			*int
 }
 
 //===[BASIC_FUNCTIONS]=======================================================\\
@@ -759,6 +760,8 @@ func getAll(data string) (*All) {
 	}
 	all.mainPage = parts[3]
 	all.eventsPage = parts[4]
+	bot := 0
+	all.bot = &bot
 	return &all
 }
 
@@ -777,6 +780,8 @@ func reload(w http.ResponseWriter, r *http.Request, all *All) {
 	all.mainPage = tmp.mainPage
 	all.eventsPage = tmp.eventsPage
 	all.mu.Unlock()
+	bot := 0
+	all.bot = &bot
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
@@ -917,21 +922,35 @@ func send(w http.ResponseWriter, r *http.Request, all *All) {
 
 //===[BOT]===================================================================\\
 
-func getBear(w http.ResponseWriter, r *http.Request) {
+func getBear(w http.ResponseWriter, r *http.Request, all *All) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`<!doctype html><html><body><p>TEST!</p></body></html>`))
-	log.Println("frombot-Got")
+	all.mu.Lock()
+	if *all.bot > 0 {
+		*all.bot = 0
+	} else {
+		*all.bot -= 1
+	}
+	if *all.bot < -3 {
+		*all.bot = 0
+		all.mu.Unlock()
+		log.Println("HELP!")
+		go sendCat(w, r, all)
+		all.mu.Lock()
+	}
+	all.mu.Unlock()
+	log.Println("frombot-Got ", *all.bot)
 }
 
-func sendCat(w http.ResponseWriter, r *http.Request) {
+func sendCat(w http.ResponseWriter, r *http.Request, all *All) {
 	for {
-		time.Sleep(5 * time.Minute)
+		time.Sleep(10 * time.Second)
 		req, err := http.NewRequest(http.MethodDelete,
 			"https://sdracamle.herokuapp.com/getbot", nil)
 		if err == nil {
 			tr := &http.Transport{
-				TLSClientConfig: &tls.Config{
-					InsecureSkipVerify: true,
+					TLSClientConfig: &tls.Config{
+						InsecureSkipVerify: true,
 					},
 				}
 				client := &http.Client{
@@ -942,7 +961,10 @@ func sendCat(w http.ResponseWriter, r *http.Request) {
 			if err != nil {
 				log.Println("client error: " + err.Error())
 			} else {
-				log.Println("tobot-Done")
+				all.mu.Lock()
+				*all.bot = 1
+				all.mu.Unlock()
+				log.Println("tobot-Done ", *all.bot)
 			}
 		} else {
 			log.Println("request error" + err.Error())
@@ -1007,9 +1029,14 @@ func main() {
 	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		mainPage(w, r, all)
 	})
+	
+	http.HandleFunc("/sendbot", func(w http.ResponseWriter, r *http.Request) {
+		sendCat(w, r, all)
+	})
 
-	http.HandleFunc("/sendbot", sendCat)
-	http.HandleFunc("/getbot", getBear)
+	http.HandleFunc("/getbot", func(w http.ResponseWriter, r *http.Request) {
+		getBear(w, r, all)
+	})
 
 	port := os.Getenv("PORT")
 	if port == "" {
