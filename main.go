@@ -415,11 +415,12 @@ func commPage(w http.ResponseWriter, r *http.Request, all *All) {
 		</form>
 		<p></p>`))
 	all.mu.Lock()
-	for _, comm := range all.comms {
+	l := len(all.comms) - 1
+	for i := range all.comms {
 		w.Write([]byte(`<p><span style="color:#8B0000">[` +
-			(*comm).time + `]</span> `))
-		w.Write([]byte(`<b>` + (*comm).name + `: </b>` +
-			code((*comm).text) + `</p>`))
+			(*all.comms[l - i]).time + `]</span> `))
+		w.Write([]byte(`<b>` + (*all.comms[l - i]).name + `: </b>` +
+			code((*all.comms[l - i]).text) + `</p>`))
 	}
 	all.mu.Unlock()
 	writeEnd(w)
@@ -931,7 +932,7 @@ func getBear(w http.ResponseWriter, r *http.Request, all *All) {
 	} else {
 		*all.bot -= 1
 	}
-	if *all.bot < -3 {
+	if *all.bot < -2 {
 		*all.bot = 0
 		all.mu.Unlock()
 		log.Println("HELP!")
@@ -944,7 +945,7 @@ func getBear(w http.ResponseWriter, r *http.Request, all *All) {
 
 func sendCat(w http.ResponseWriter, r *http.Request, all *All) {
 	for {
-		time.Sleep(5 * time.Minute)
+		time.Sleep(3 * time.Minute)
 		req, err := http.NewRequest(http.MethodDelete,
 			"https://sdracamle.herokuapp.com/getbot", nil)
 		if err == nil {
