@@ -441,17 +441,19 @@ func cardsPage(w http.ResponseWriter, r *http.Request, all *All) {
 	w.Write([]byte(`
 		<table border bgcolor="white">
 			<tr bgcolor="#008B8B">
-				<th><p>Card</p></th>
+				<th><p>Known cards</p></th>
 				<th><p>Info</p></th>
 			</tr>`))
 	all.mu.Lock()
 	cardList := map[string]map[string]int{}
 	infoList := map[string]string{}
 	urlList := map[string]string{}
+	totalList := map[string]int{}
 	for cardname, card := range all.cards {
 		cardList[cardname] = map[string]int{}
 		urlList[cardname] = (*card).url
 		infoList[cardname] = (*card).info
+		totalList[cardname] = 0
 	}
 	for manname, man := range all.mans {
 		for _, card := range man.cards {
@@ -466,15 +468,12 @@ func cardsPage(w http.ResponseWriter, r *http.Request, all *All) {
 					}
 				}
 			}
+			totalList[(*card).name] += 1
 		}
 	}
 	all.mu.Unlock()
 	for i, nameList := range cardList {
-		total := 0
-		for _, amount := range nameList {
-			total += amount
-		}
-		if total > 0 {
+		if totalList[i] > 0 {
 			w.Write([]byte(`<tr><td><img src="` + urlList[i] + `"></td>`))
 			w.Write([]byte(`<td>`))
 			if infoList[i] != "" {
@@ -486,7 +485,7 @@ func cardsPage(w http.ResponseWriter, r *http.Request, all *All) {
 					` ` + howMany(amount, "card") + `</p>`))
 			}
 			w.Write([]byte(`<p><b>Total amount is <span style="color:#DC143C">` +
-				strconv.Itoa(total) + `</span></b></p>`))
+				strconv.Itoa(totalList[i]) + `</span></b></p>`))
 			w.Write([]byte(`</td></tr>`))
 		}
 	}
