@@ -16,6 +16,7 @@ import (
 )
 
 //===[STRUCTURES]============================================================\\
+
 type Card struct {
 	url			string
 	info		string
