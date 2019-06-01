@@ -9,13 +9,13 @@ import (
 	"strings"
 	"strconv"
 	"crypto/tls"
-
+	"bytes"
+	
 	"os"
 	_ "github.com/heroku/x/hmetrics/onload"
 )
 
 //===[STRUCTURES]============================================================\\
-
 type Card struct {
 	url			string
 	info		string
@@ -50,10 +50,14 @@ type All struct {
 }
 
 //===[BASIC_FUNCTIONS]=======================================================\\
-
 func site() (string) {
 	return "https://elmacards.herokuapp.com/"
 	//return "/"
+}
+
+func otherSite() (string) {
+	return "https://elmacards.herokuapp.com/"
+	//return "http://127.0.0.1:8081/"
 }
 
 func getCookies(r *http.Request) (*http.Cookie, bool) {
@@ -150,7 +154,6 @@ func howMany(a int, s string) (string) {
 }
 
 //===[WRITE_HTML_PAGE_BEGINNING]=============================================\\
-
 func writeGeneral(w http.ResponseWriter, r *http.Request, all *All) {
 	session, logged := getCookies(r)
 	w.Write([]byte(`<!doctype html>
@@ -256,7 +259,6 @@ func writeGeneral(w http.ResponseWriter, r *http.Request, all *All) {
 }
 
 //===[PAGES]=================================================================\\
-
 func mainPage(w http.ResponseWriter, r *http.Request, all *All) {
 	session, logged := getCookies(r)
 	writeGeneral(w, r, all)
@@ -492,7 +494,6 @@ func cardsPage(w http.ResponseWriter, r *http.Request, all *All) {
 }
 
 //===[ADMIN_CARDS_OPERATIONS]================================================\\
-
 func setPictures(w http.ResponseWriter, r *http.Request, all *All) {
 	session, logged := getCookies(r)
 	if !admin(logged, session) {
@@ -535,7 +536,6 @@ func setPictures(w http.ResponseWriter, r *http.Request, all *All) {
 }
 
 //===[USERS_OPERATIONS]======================================================\\
-
 func users(w http.ResponseWriter, r *http.Request, all *All) {
 	session, logged := getCookies(r)
 	name := r.FormValue("name")
@@ -649,148 +649,7 @@ func addCard(w http.ResponseWriter, r *http.Request, all *All) {
 	http.Redirect(w, r, "/", http.StatusFound)
 }
 
-//===[FULL_DATA]=============================================================\\
-
-func download(w http.ResponseWriter, r *http.Request, all *All) {
-	session, logged := getCookies(r)
-	if !admin(logged, session) {
-		http.Redirect(w, r, "/", http.StatusFound)
-		return
-	}
-	all.mu.Lock()
-	for name, i := range all.cards {
-		w.Write([]byte(name + "(-ELEM-)" + (*i).url + "(-ELEM-)" + (*i).info))
-		w.Write([]byte("(-STRING-)\n"))
-	}
-	w.Write([]byte("(-BLOCK-)\n\n"))
-	for man, i := range all.mans {
-		w.Write([]byte(man + "(-ELEM-)" + (*i).password + "(-ELEM-)"))
-		for _, j := range i.cards {
-			w.Write([]byte((*j).name + "(-PART-)" + isTrue((*j).show) +
-				"(-PART-)" + ((*j).info)))
-			w.Write([]byte("(-THING-)"))
-		}
-		w.Write([]byte("(-STRING-)\n"))
-	}
-	w.Write([]byte("(-BLOCK-)\n\n"))
-	for _, i := range all.comms {
-		w.Write([]byte(i.time + "(-ELEM-)" + i.name + "(-ELEM-)" + i.text))
-		w.Write([]byte("(-STRING-)\n"))
-	}
-	w.Write([]byte("(-BLOCK-)\n\n"))
-	w.Write([]byte(all.mainPage))
-	w.Write([]byte("\n(-BLOCK-)\n\n"))
-	w.Write([]byte(all.eventsPage))
-	all.mu.Unlock()
-}
-
-func getAll(data string) (*All) {
-	blocks := strings.Replace(data, "\r", "", -1)
-	all := All{
-		cards:	map[string]*Card{},
-		mans:	map[string]*Man{},
-		comms:	[]*Comm{},
-	}
-	parts := strings.Split(blocks, "(-BLOCK-)")
-	if len(parts) < 5 {
-		return &all
-	}
-	cardList := strings.Split(parts[0], "(-STRING-)")
-	for _, i := range cardList {
-		cardInfo := strings.Split(i, "(-ELEM-)")
-		if len(cardInfo) < 2 {
-			continue
-		}
-		info := ""
-		if len(cardInfo) >= 3 {
-			info = cardInfo[2]
-		}
-		card := Card {
-			url:	cardInfo[1],
-			info:	info,
-		}
-		all.cards[strings.Replace(cardInfo[0], "\n", "", -1)] = &card
-	}
-	nameList := strings.Split(parts[1], "(-STRING-)")
-	for _, i := range nameList {
-		nameInfo := strings.Split(i, "(-ELEM-)")
-		if len(nameInfo) < 2 {
-			continue
-		}
-		man := Man {
-			password:	nameInfo[1],
-			cards:		[]*MyCard{},
-		}
-		if len(nameInfo) == 3 {
-			hisCards := nameInfo[2]
-			eachCard := strings.Split(hisCards, "(-THING-)")
-			for _, j := range eachCard {
-				cardPointer := strings.Split(j, "(-PART-)")
-				if len(cardPointer) < 2 {
-					continue
-				}
-				_, exists := all.cards[cardPointer[0]]
-				if !exists {
-					continue
-				}
-				info := ""
-				if len(cardPointer) >= 3 {
-					info = cardPointer[2]
-				}
-				mycard := MyCard {
-					name:	cardPointer[0],
-					show:	isShow(cardPointer[1]),
-					info:	info,
-				}
-				man.cards = append(man.cards, &mycard)
-			}
-		}
-		all.mans[strings.Replace(nameInfo[0], "\n", "", -1)] = &man
-	}
-	commList := strings.Split(parts[2], "(-STRING-)")
-	for _, i := range commList {
-		commInfo := strings.Split(i, "(-ELEM-)")
-		if len(commInfo) < 3 {
-			continue
-		}
-		comm := Comm {
-			name:	commInfo[1],
-			text:	commInfo[2],
-			time:	strings.Replace(commInfo[0], "\n", "", -1),
-		}
-		all.comms = append(all.comms, &comm)
-	}
-	all.mainPage = parts[3]
-	all.eventsPage = parts[4]
-	bot := 0
-	all.bot = &bot
-	botLock := true
-	all.botLock = &botLock
-	return &all
-}
-
-func reload(w http.ResponseWriter, r *http.Request, all *All) {
-	session, logged := getCookies(r)
-	if !admin(logged, session) {
-		http.Redirect(w, r, "/", http.StatusFound)
-		return
-	}
-	saved := r.FormValue("saved")
-	tmp := getAll(saved)
-	all.mu.Lock()
-	all.mans = tmp.mans
-	all.cards = tmp.cards
-	all.comms = tmp.comms
-	all.mainPage = tmp.mainPage
-	all.eventsPage = tmp.eventsPage
-	all.mu.Unlock()
-	all.bot = tmp.bot
-	all.botLock = tmp.botLock
-	http.Redirect(w, r, "/", http.StatusFound)
-}
-
 //===[LOGIN]=================================================================\\
-
 func allRight(name string, pass string, mans map[string]*Man) (bool) {
 	if wrong(name) || wrong(pass) {
 		return false
@@ -821,7 +680,6 @@ func loginPage(w http.ResponseWriter, r *http.Request, all *All) {
 }
 
 //===[USER_ACTIONS]==========================================================\\
-
 func actionPage(w http.ResponseWriter, r *http.Request, all *All) {
 	session, logged := getCookies(r)
 	button := r.FormValue("action")
@@ -924,8 +782,155 @@ func send(w http.ResponseWriter, r *http.Request, all *All) {
 	http.Redirect(w, r, "/comments", http.StatusFound)
 }
 
-//===[BOT]===================================================================\\
+//===[FULL_DATA]=============================================================\\
+func download(w http.ResponseWriter, r *http.Request, all *All) {
+	session, logged := getCookies(r)
+	if !admin(logged, session) {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+	w.Write(prepareData(all))
+}
 
+func prepareData(all *All) ([]byte) {
+	all.mu.Lock()
+	data := make([]byte, 0, 2000)
+	for name, i := range all.cards {
+		data = append(data, []byte(name + "(-ELEM-)" +
+			(*i).url + "(-ELEM-)" + (*i).info)...)
+		data = append(data, []byte("(-STRING-)\n")...)
+	}
+	data = append(data, []byte("(-BLOCK-)\n\n")...)
+	for man, i := range all.mans {
+		data = append(data, []byte(man + "(-ELEM-)" +
+			(*i).password + "(-ELEM-)")...)
+		for _, j := range i.cards {
+			data = append(data, []byte((*j).name + "(-PART-)" +
+				isTrue((*j).show) + "(-PART-)" + ((*j).info) + "(-THING-)")...)
+		}
+		data = append(data, []byte("(-STRING-)\n")...)
+	}
+	data = append(data, []byte("(-BLOCK-)\n\n")...)
+	for _, i := range all.comms {
+		data = append(data, []byte(i.time + "(-ELEM-)" +
+			i.name + "(-ELEM-)" + i.text + "(-STRING-)\n")...)
+	}
+	data = append(data, []byte("(-BLOCK-)\n\n" +
+		all.mainPage + "\n(-BLOCK-)\n\n" + all.eventsPage)...)
+	all.mu.Unlock()
+	return data
+}
+
+func getAll(data string) (*All) {
+	blocks := strings.Replace(data, "\r", "", -1)
+	all := All{
+		cards:	map[string]*Card{},
+		mans:	map[string]*Man{},
+		comms:	[]*Comm{},
+	}
+	parts := strings.Split(blocks, "(-BLOCK-)")
+	if len(parts) < 5 {
+		return &all
+	}
+	cardList := strings.Split(parts[0], "(-STRING-)")
+	for _, i := range cardList {
+		cardInfo := strings.Split(i, "(-ELEM-)")
+		if len(cardInfo) < 2 {
+			continue
+		}
+		info := ""
+		if len(cardInfo) >= 3 {
+			info = cardInfo[2]
+		}
+		card := Card {
+			url:	cardInfo[1],
+			info:	info,
+		}
+		all.cards[strings.Replace(cardInfo[0], "\n", "", -1)] = &card
+	}
+	nameList := strings.Split(parts[1], "(-STRING-)")
+	for _, i := range nameList {
+		nameInfo := strings.Split(i, "(-ELEM-)")
+		if len(nameInfo) < 2 {
+			continue
+		}
+		man := Man {
+			password:	nameInfo[1],
+			cards:		[]*MyCard{},
+		}
+		if len(nameInfo) == 3 {
+			hisCards := nameInfo[2]
+			eachCard := strings.Split(hisCards, "(-THING-)")
+			for _, j := range eachCard {
+				cardPointer := strings.Split(j, "(-PART-)")
+				if len(cardPointer) < 2 {
+					continue
+				}
+				_, exists := all.cards[cardPointer[0]]
+				if !exists {
+					continue
+				}
+				info := ""
+				if len(cardPointer) >= 3 {
+					info = cardPointer[2]
+				}
+				mycard := MyCard {
+					name:	cardPointer[0],
+					show:	isShow(cardPointer[1]),
+					info:	info,
+				}
+				man.cards = append(man.cards, &mycard)
+			}
+		}
+		all.mans[strings.Replace(nameInfo[0], "\n", "", -1)] = &man
+	}
+	commList := strings.Split(parts[2], "(-STRING-)")
+	for _, i := range commList {
+		commInfo := strings.Split(i, "(-ELEM-)")
+		if len(commInfo) < 3 {
+			continue
+		}
+		comm := Comm {
+			name:	commInfo[1],
+			text:	commInfo[2],
+			time:	strings.Replace(commInfo[0], "\n", "", -1),
+		}
+		all.comms = append(all.comms, &comm)
+	}
+	all.mainPage = parts[3]
+	all.eventsPage = parts[4]
+	bot := 0
+	all.bot = &bot
+	botLock := true
+	all.botLock = &botLock
+	return &all
+}
+
+func reload(w http.ResponseWriter, r *http.Request, all *All) {
+	session, logged := getCookies(r)
+	if !admin(logged, session) {
+		http.Redirect(w, r, "/", http.StatusFound)
+		return
+	}
+	saved := r.FormValue("saved")
+	all.mu.Lock()
+	up(all, saved)
+	all.mu.Unlock()
+	http.Redirect(w, r, "/", http.StatusFound)
+}
+
+func up(all *All, saved string) {
+	tmp := getAll(saved)
+	all.mans = tmp.mans
+	all.cards = tmp.cards
+	all.comms = tmp.comms
+	all.mainPage = tmp.mainPage
+	all.eventsPage = tmp.eventsPage
+	all.bot = tmp.bot
+	all.botLock = tmp.botLock
+}
+
+//===[BOT]===================================================================\\
 func getBear(w http.ResponseWriter, r *http.Request, all *All) {
 	w.WriteHeader(http.StatusOK)
 	w.Write([]byte(`<!doctype html><html><body><p>TEST!</p></body></html>`))
@@ -938,6 +943,13 @@ func getBear(w http.ResponseWriter, r *http.Request, all *All) {
 	if *all.bot < -2 {
 		*all.bot = 0
 		*all.botLock = true
+		out, err := ioutil.ReadAll(r.Body)
+		if err == nil {
+			log.Println("I have got: '" + string(out)[:50] + "'!")
+			up(all, string(out))
+		} else {
+			log.Println(err.Error())
+		}
 		all.mu.Unlock()
 		log.Println("HELP!")
 		go sendCat(w, r, all)
@@ -958,8 +970,10 @@ func sendCat(w http.ResponseWriter, r *http.Request, all *All) {
 	all.mu.Unlock()
 	for {
 		time.Sleep(3 * time.Minute)
+		//time.Sleep(10 * time.Second)
+		data := bytes.NewReader(prepareData(all))
 		req, err := http.NewRequest(http.MethodDelete,
-			"https://sdracamle.herokuapp.com/getbot", nil)
+			otherSite() + "getbot", data)
 		if err == nil {
 			tr := &http.Transport{
 					TLSClientConfig: &tls.Config{
@@ -992,7 +1006,6 @@ func sendCat(w http.ResponseWriter, r *http.Request, all *All) {
 }
 
 //===[MAIN]==================================================================\\
-
 func main() {
 	data, _ := ioutil.ReadFile("saved.txt")
 	all := getAll(string(data))
