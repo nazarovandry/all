@@ -56,7 +56,7 @@ func site() (string) {
 }
 
 func otherSite() (string) {
-	return "https://elmacards.herokuapp.com/"
+	return "https://sdracamle.herokuapp.com/"
 	//return "http://127.0.0.1:8081/"
 }
 
