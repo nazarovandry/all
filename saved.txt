@@ -7,4 +7,10 @@ AndrY(-ELEM-)andry(-ELEM-)(-STRING-)
 (-BLOCK-)
 
 Site is not working now, because of the problems with conception. It will be fixed until the next contest.
-(BLOCK-)
+(-BLOCK-)
+
+<table bgcolor="white">
+	<tr bgcolor="#9ACD32">
+		<th><p><b>Internals Inspired Cup (2019)</b> [ <a href="http://mopolauta.moposite.com/viewtopic.php?f=3&p=264423#p=264423/">Info</a> | <a href="http://elmaonline.net/statistics/cups/13/">Point standings</a> ]</p></th>
+	</tr>
+</table>
