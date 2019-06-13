@@ -6,5 +6,5 @@ AndrY(-ELEM-)andry(-ELEM-)(-STRING-)
 1922-06-31 20:07:42(-ELEM-)AndrY(-ELEM-)Wait, the database is not ready yet...(-STRING-)
 (-BLOCK-)
 
-Site is broken. Soon it will be fixed. 
-(-BLOCK-)
+Site is not working now, because of the problems with conception. It will be fixed until the next contest.
+(BLOCK-)
